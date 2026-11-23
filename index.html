@@ -2,18 +2,22 @@
 <html lang="de">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <title>Wahlkarte Deutschland – Alle Gemeinden</title>
-  
+
   <script src="https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
   <link href="https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet" />
 
   <style>
+    * {
+      box-sizing: border-box;
+    }
     body, html {
       margin: 0;
       padding: 0;
       width: 100%;
       height: 100%;
+      height: 100dvh;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       overflow: hidden;
       background: #f0f2f5;
@@ -22,9 +26,13 @@
       width: 100%;
       height: 100%;
     }
+    .maplibregl-ctrl-top-right {
+      top: 118px !important;
+    }
+
     .search-bar {
       position: absolute;
-      top: 14px;
+      top: max(12px, env(safe-area-inset-top));
       left: 14px;
       right: 14px;
       max-width: 420px;
@@ -32,10 +40,10 @@
       display: flex;
       gap: 6px;
       padding: 6px;
-      background: rgba(255, 255, 255, 0.78);
+      background: rgba(255, 255, 255, 0.84);
       backdrop-filter: blur(12px);
       -webkit-backdrop-filter: blur(12px);
-      border: 1px solid rgba(255, 255, 255, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.65);
       border-radius: 14px;
       box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
       z-index: 10;
@@ -45,10 +53,11 @@
     }
     .search-bar input {
       flex: 1;
+      min-width: 0;
       border: none;
       background: transparent;
       padding: 8px 10px;
-      font-size: 15px;
+      font-size: 16px;
       outline: none;
       color: #111;
     }
@@ -61,6 +70,86 @@
       cursor: pointer;
       font-weight: 600;
       font-size: 14px;
+      flex-shrink: 0;
+    }
+
+    .election-switcher {
+      position: absolute;
+      top: calc(max(12px, env(safe-area-inset-top)) + 56px);
+      left: 14px;
+      right: 14px;
+      max-width: 420px;
+      margin: 0 auto;
+      display: flex;
+      gap: 4px;
+      padding: 4px;
+      background: rgba(255, 255, 255, 0.84);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.65);
+      border-radius: 12px;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.10);
+      z-index: 10;
+    }
+    .election-btn {
+      flex: 1;
+      border: none;
+      background: transparent;
+      color: #333;
+      padding: 7px 6px;
+      border-radius: 9px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.18s ease, color 0.18s ease;
+    }
+    .election-btn.active {
+      background: #111;
+      color: #fff;
+    }
+
+    .mini-legend {
+      position: absolute;
+      top: calc(max(12px, env(safe-area-inset-top)) + 106px);
+      left: 14px;
+      max-width: calc(100% - 72px);
+      background: rgba(255, 255, 255, 0.84);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      padding: 5px 10px;
+      border-radius: 10px;
+      font-size: 11px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px 10px;
+      z-index: 9;
+    }
+    .dot {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      margin-right: 4px;
+    }
+
+    .toast {
+      position: absolute;
+      top: calc(max(12px, env(safe-area-inset-top)) + 150px);
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(17, 17, 17, 0.88);
+      color: #fff;
+      padding: 8px 14px;
+      border-radius: 10px;
+      font-size: 13px;
+      z-index: 15;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s ease;
+      white-space: nowrap;
+    }
+    .toast.visible {
+      opacity: 1;
     }
 
     .upload-box {
@@ -110,45 +199,23 @@
       font-weight: 500;
     }
 
-    .mini-legend {
-      position: absolute;
-      top: 68px;
-      left: 14px;
-      background: rgba(255, 255, 255, 0.84);
-      backdrop-filter: blur(8px);
-      padding: 5px 10px;
-      border-radius: 10px;
-      font-size: 11px;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      z-index: 9;
-    }
-    .dot {
-      display: inline-block;
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      margin-right: 4px;
-    }
-
     .result-card {
       position: absolute;
-      bottom: 20px;
+      bottom: max(16px, env(safe-area-inset-bottom));
       left: 14px;
       right: 14px;
       max-width: 420px;
-      max-height: 48vh;
+      max-height: 46dvh;
       overflow-y: auto;
       margin: 0 auto;
-      background: rgba(255, 255, 255, 0.94);
+      background: rgba(255, 255, 255, 0.95);
       backdrop-filter: blur(12px);
       -webkit-backdrop-filter: blur(12px);
       padding: 14px 16px;
       border-radius: 16px;
       box-shadow: 0 6px 24px rgba(0, 0, 0, 0.18);
       z-index: 10;
-      transition: transform 0.25s ease, opacity 0.25s ease;
+      transition: transform 0.22s ease, opacity 0.22s ease;
     }
     .result-card.hidden {
       transform: translateY(120%);
@@ -158,7 +225,8 @@
     .card-header {
       display: flex;
       justify-content: space-between;
-      align-items: center;
+      align-items: flex-start;
+      gap: 10px;
       margin-bottom: 10px;
     }
     .card-title {
@@ -172,14 +240,15 @@
       margin: 2px 0 0 0;
     }
     .close-btn {
-      background: rgba(0,0,0,0.08);
+      background: rgba(0, 0, 0, 0.08);
       border: none;
-      width: 26px;
-      height: 26px;
+      width: 28px;
+      height: 28px;
       border-radius: 50%;
       cursor: pointer;
       font-size: 14px;
       color: #333;
+      flex-shrink: 0;
     }
     .bar-row {
       margin-bottom: 7px;
@@ -207,8 +276,14 @@
 <body>
 
   <div class="search-bar">
-    <input type="text" id="searchInput" placeholder="Gemeinde oder Stadt suchen (z. B. Niederwörresbach)..." />
-    <button onclick="searchPlace()">Suchen</button>
+    <input type="text" id="searchInput" placeholder="Gemeinde oder Stadt suchen..." autocomplete="off" />
+    <button type="button" onclick="searchPlace()">Suchen</button>
+  </div>
+
+  <div class="election-switcher" role="tablist" aria-label="Wahlart wählen">
+    <button type="button" class="election-btn active" role="tab" aria-selected="true" data-election="bundestag" onclick="switchElection('bundestag')">Bundestag</button>
+    <button type="button" class="election-btn" role="tab" aria-selected="false" data-election="landtag" onclick="switchElection('landtag')">Landtag</button>
+    <button type="button" class="election-btn" role="tab" aria-selected="false" data-election="kommunal" onclick="switchElection('kommunal')">Kommunal</button>
   </div>
 
   <div class="mini-legend">
@@ -217,13 +292,16 @@
     <span><i class="dot" style="background:#e3000f;"></i>SPD</span>
     <span><i class="dot" style="background:#46962b;"></i>Grüne</span>
     <span><i class="dot" style="background:#be3075;"></i>Linke</span>
+    <span><i class="dot" style="background:#f39200;"></i>FW</span>
   </div>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
   <div id="uploadBox" class="upload-box hidden">
     <h2>Gemeinde-Daten laden</h2>
-    <p>Wähle <strong>gemeinden.geojson</strong> und die große <strong>Wahlbezirks-CSV</strong> aus. Dabei wird automatisch die kleine <strong>ergebnisse.json</strong> für GitHub heruntergeladen.</p>
+    <p>Wähle <strong>gemeinden.geojson</strong> und <strong>ergebnisse.json</strong> aus (nur nötig bei lokalem Öffnen ohne Server).</p>
     <label for="fileInput" class="upload-btn">Beide Dateien auswählen</label>
-    <input type="file" id="fileInput" multiple accept=".geojson,.json,.csv" />
+    <input type="file" id="fileInput" multiple accept=".geojson,.json" />
     <div id="uploadStatus"></div>
   </div>
 
@@ -233,49 +311,71 @@
     <div class="card-header">
       <div>
         <h2 id="cardTitle" class="card-title">Gemeinde</h2>
-        <p id="cardSubtitle" class="card-subtitle">Bundestagswahl 2025 (Zweitstimmen)</p>
+        <p id="cardSubtitle" class="card-subtitle">Bundestagswahl</p>
       </div>
-      <button class="close-btn" onclick="closeCard()">✕</button>
+      <button type="button" class="close-btn" aria-label="Schließen" onclick="closeCard()">✕</button>
     </div>
     <div id="barsContainer"></div>
   </div>
 
   <script>
-    const partyColors = {
-      "CDU": "#111111",
-      "CSU": "#111111",
-      "AfD": "#009ee0",
-      "SPD": "#e3000f",
-      "GRÜNE": "#46962b",
-      "Grüne": "#46962b",
-      "Die Linke": "#be3075",
-      "DIE LINKE": "#be3075",
-      "Linke": "#be3075",
-      "BSW": "#792351",
-      "FDP": "#e6b800",
-      "FREIE WÄHLER": "#f39200",
-      "SSW": "#003c8f",
-      "Volt": "#502379",
-      "Sonstige": "#888888"
+    const ELECTION_KEYS = ['bundestag', 'landtag', 'kommunal'];
+    const ELECTION_LABELS = {
+      bundestag: 'Bundestagswahl',
+      landtag: 'Landtagswahl',
+      kommunal: 'Kommunalwahl'
+    };
+
+    const PARTY_COLORS = {
+      'CDU': '#111111',
+      'CSU': '#111111',
+      'CDU/CSU': '#111111',
+      'AfD': '#009ee0',
+      'SPD': '#e3000f',
+      'GRÜNE': '#46962b',
+      'Grüne': '#46962b',
+      'Die Linke': '#be3075',
+      'DIE LINKE': '#be3075',
+      'Linke': '#be3075',
+      'BSW': '#792351',
+      'FDP': '#e6b800',
+      'FREIE WÄHLER': '#f39200',
+      'Freie Wähler': '#f39200',
+      'SSW': '#003c8f',
+      'Volt': '#502379',
+      'Sonstige': '#888888'
     };
 
     function getPartyColor(name) {
-      if (partyColors[name]) return partyColors[name];
+      if (!name) return '#cccccc';
+      if (PARTY_COLORS[name]) return PARTY_COLORS[name];
       const upper = name.toUpperCase();
-      if (upper.includes("CDU") || upper.includes("CSU")) return "#111111";
-      if (upper.includes("AFD")) return "#009ee0";
-      if (upper.includes("SPD")) return "#e3000f";
-      if (upper.includes("GRÜN")) return "#46962b";
-      if (upper.includes("LINKE")) return "#be3075";
-      if (upper.includes("BSW")) return "#792351";
-      if (upper.includes("FDP")) return "#e6b800";
-      if (upper.includes("FREIE WÄHLER")) return "#f39200";
-      return "#888888";
+      if (upper.includes('CDU') || upper.includes('CSU')) return '#111111';
+      if (upper.includes('AFD')) return '#009ee0';
+      if (upper.includes('SPD')) return '#e3000f';
+      if (upper.includes('GRÜN')) return '#46962b';
+      if (upper.includes('LINKE')) return '#be3075';
+      if (upper.includes('BSW')) return '#792351';
+      if (upper.includes('FDP')) return '#e6b800';
+      if (upper.includes('FREIE WÄHLER')) return '#f39200';
+      return '#888888';
     }
 
-    let gemeindeResults = {};
+    let allResults = { bundestag: {}, landtag: {}, kommunal: {} };
+    let currentElection = 'bundestag';
+    let currentGeoJSON = null;
+    let selectedGemeinde = null;
     let loadedGeoJSON = null;
-    let loadedCSVText = null;
+    let loadedResultsJSON = null;
+    let toastTimer = null;
+
+    function showToast(message) {
+      const el = document.getElementById('toast');
+      el.textContent = message;
+      el.classList.add('visible');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => el.classList.remove('visible'), 2600);
+    }
 
     const map = new maplibregl.Map({
       container: 'map',
@@ -301,139 +401,80 @@
       trackUserLocation: true
     }), 'top-right');
 
-    function parseWahlbezirkeCSV(csvText) {
-      const lines = csvText.split(/\r?\n/);
-      let headerIndex = -1;
-
-      for (let i = 0; i < Math.min(lines.length, 30); i++) {
-        const line = lines[i];
-        if (!line.startsWith('#') && line.includes('Land') && line.includes('Kreis') && line.includes('Gemeinde')) {
-          headerIndex = i;
-          break;
-        }
+    function normalizeResultsRoot(raw) {
+      if (raw && (raw.bundestag || raw.landtag || raw.kommunal)) {
+        return {
+          bundestag: raw.bundestag || {},
+          landtag: raw.landtag || {},
+          kommunal: raw.kommunal || {}
+        };
       }
-      if (headerIndex === -1) return {};
+      return { bundestag: raw || {}, landtag: {}, kommunal: {} };
+    }
 
-      const headers = lines[headerIndex].split(';').map(h => h.trim().replace(/^"|"$/g, ''));
-      const idxLand  = headers.indexOf('Land');
-      const idxRB    = headers.findIndex(h => h === 'Regierungsbezirk' || h === 'RB');
-      const idxKreis = headers.indexOf('Kreis');
-      const idxGem   = headers.indexOf('Gemeinde');
+    function normalizeEntry(raw) {
+      if (!raw) return null;
 
-      const gueltigeIndices = headers
-        .map((h, idx) => h.toLowerCase().startsWith('gültige') ? idx : -1)
-        .filter(idx => idx !== -1);
-
-      const idxGueltigeZweit = gueltigeIndices.length >= 2
-        ? gueltigeIndices[1]
-        : headers.findIndex(h => h.toLowerCase().includes('gültige') && h.toLowerCase().includes('zweit'));
-
-      if (idxLand === -1 || idxKreis === -1 || idxGem === -1 || idxGueltigeZweit === -1) {
-        return {};
+      if (Array.isArray(raw.parties)) {
+        return {
+          jahr: raw.jahr || null,
+          wahlbeteiligung: null,
+          totalValid: raw.totalValid || null,
+          parties: raw.parties
+        };
       }
 
-      const ignoreKeywords = [
-        'wahlbezirksbezeichnung', 'bemerkung', 'fußnote', 'hinweis', 'kommentar',
-        'bezirksart', 'wahlbezirk', 'gemeinde', 'kreis', 'land', 'wahlkreis',
-        'ungültige', 'gültige', 'wahlberechtigte', 'wählende'
-      ];
+      if (raw.parteien && typeof raw.parteien === 'object') {
+        const hasSingleUnion = raw.parteien['CDU'] !== undefined || raw.parteien['CSU'] !== undefined;
 
-      const partyCols = [];
-      for (let c = idxGueltigeZweit + 1; c < headers.length; c++) {
-        const cleanParty = headers[c]
-          .replace(/\s*-\s*Zweitstimmen/i, '')
-          .replace(/\.1$/, '')
-          .trim();
-        if (!cleanParty) continue;
-        const lower = cleanParty.toLowerCase();
-        if (ignoreKeywords.some(kw => lower.includes(kw))) continue;
-
-        partyCols.push({ index: c, name: cleanParty });
-      }
-
-      const aggByAGS = {};
-
-      for (let i = headerIndex + 1; i < lines.length; i++) {
-        const line = lines[i];
-        if (!line || line.startsWith('#')) continue;
-
-        const cols = line.split(';');
-        if (cols.length <= idxGueltigeZweit) continue;
-
-        const land  = cols[idxLand].trim().replace(/^"|"$/g, '').padStart(2, '0');
-        const rb    = idxRB !== -1 ? cols[idxRB].trim().replace(/^"|"$/g, '').padStart(1, '0') : '0';
-        const kreis = cols[idxKreis].trim().replace(/^"|"$/g, '').padStart(2, '0');
-        const gem   = cols[idxGem].trim().replace(/^"|"$/g, '').padStart(3, '0');
-
-        const ags = land + rb + kreis + gem;
-        const validVotes = parseInt(cols[idxGueltigeZweit].trim(), 10) || 0;
-        if (validVotes <= 0) continue;
-
-        if (!aggByAGS[ags]) {
-          aggByAGS[ags] = { totalValid: 0, votes: {} };
-        }
-        aggByAGS[ags].totalValid += validVotes;
-
-        for (let p = 0; p < partyCols.length; p++) {
-          const pc = partyCols[p];
-          const rawVal = (cols[pc.index] || '').trim().replace(/^"|"$/g, '');
-          if (/^\d+$/.test(rawVal)) {
-            const v = parseInt(rawVal, 10);
-            if (v > 0) {
-              aggByAGS[ags].votes[pc.name] = (aggByAGS[ags].votes[pc.name] || 0) + v;
-            }
-          }
-        }
-      }
-
-      const finalResults = {};
-      Object.keys(aggByAGS).forEach(ags => {
-        const entry = aggByAGS[ags];
-        if (entry.totalValid <= 0) return;
-
-        const list = Object.keys(entry.votes)
-          .map(party => ({
-            p: party,
-            v: Math.round(((entry.votes[party] / entry.totalValid) * 100) * 100) / 100
-          }))
+        const list = Object.entries(raw.parteien)
+          .filter(([name, val]) => {
+            if (hasSingleUnion && name === 'CDU/CSU') return false;
+            return typeof val === 'number' && val > 0;
+          })
+          .map(([name, val]) => ({ p: name, v: val }))
           .sort((a, b) => b.v - a.v);
 
-        const major = [];
-        let sonstigeSum = 0;
-        list.forEach((item, idx) => {
-          if (idx < 7 && item.v >= 1.5) {
-            major.push(item);
-          } else {
-            sonstigeSum += item.v;
+        const sum = list.reduce((acc, item) => acc + item.v, 0);
+        if (sum > 0 && sum < 99.5) {
+          const rest = Math.round((100 - sum) * 10) / 10;
+          if (rest >= 0.5) {
+            list.push({ p: 'Sonstige', v: rest });
           }
-        });
-        if (sonstigeSum > 0.1) {
-          major.push({ p: "Sonstige", v: Math.round(sonstigeSum * 100) / 100 });
         }
 
-        finalResults[ags] = {
-          totalValid: entry.totalValid,
-          parties: major
+        return {
+          jahr: raw.jahr || null,
+          wahlbeteiligung: typeof raw.wahlbeteiligung === 'number' ? raw.wahlbeteiligung : null,
+          totalValid: null,
+          parties: list
         };
+      }
+
+      return null;
+    }
+
+    function switchElection(type) {
+      if (!ELECTION_LABELS[type]) return;
+      currentElection = type;
+
+      document.querySelectorAll('.election-btn').forEach(btn => {
+        const isActive = btn.dataset.election === type;
+        btn.classList.toggle('active', isActive);
+        btn.setAttribute('aria-selected', String(isActive));
       });
 
-      return finalResults;
+      if (map.getLayer('gem-fill')) {
+        map.setPaintProperty('gem-fill', 'fill-color', ['get', `color_${type}`]);
+      }
+
+      if (selectedGemeinde && !document.getElementById('resultCard').classList.contains('hidden')) {
+        openGemeindeCard(selectedGemeinde.ags, selectedGemeinde.name, selectedGemeinde.bez);
+      }
     }
 
-    function downloadCompactJSON(dataObj) {
-      const blob = new Blob([JSON.stringify(dataObj)], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'ergebnisse.json';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-    }
-
-    function renderGemeinden(geojson, resultsMap) {
-      gemeindeResults = resultsMap;
+    function renderGemeinden(geojson, rawResults) {
+      allResults = normalizeResultsRoot(rawResults);
 
       geojson.features = geojson.features.filter(f => {
         const gf = f.properties && f.properties.GF;
@@ -450,26 +491,28 @@
         feature.properties.gem_name = name;
         feature.properties.gem_bez = bez;
 
-        const res = gemeindeResults[ags];
-        if (res && res.parties.length > 0) {
-          feature.properties.color = getPartyColor(res.parties[0].p);
-        } else {
-          feature.properties.color = "#999999";
-        }
+        ELECTION_KEYS.forEach(type => {
+          const entry = normalizeEntry((allResults[type] || {})[ags]);
+          feature.properties[`color_${type}`] = (entry && entry.parties.length > 0)
+            ? getPartyColor(entry.parties[0].p)
+            : '#cccccc';
+        });
       });
 
+      currentGeoJSON = geojson;
+
       if (map.getSource('gemeinden')) {
-        map.getSource('gemeinden').setData(geojson);
+        map.getSource('gemeinden').setData(currentGeoJSON);
       } else {
-        map.addSource('gemeinden', { type: 'geojson', data: geojson });
+        map.addSource('gemeinden', { type: 'geojson', data: currentGeoJSON });
 
         map.addLayer({
           id: 'gem-fill',
           type: 'fill',
           source: 'gemeinden',
           paint: {
-            'fill-color': ['get', 'color'],
-            'fill-opacity': ['interpolate', ['linear'], ['zoom'], 5, 0.6, 12, 0.28]
+            'fill-color': ['get', `color_${currentElection}`],
+            'fill-opacity': ['interpolate', ['linear'], ['zoom'], 5, 0.62, 12, 0.3]
           }
         });
 
@@ -481,6 +524,17 @@
             'line-color': '#ffffff',
             'line-width': ['interpolate', ['linear'], ['zoom'], 6, 0.15, 10, 0.9, 13, 1.8],
             'line-opacity': ['interpolate', ['linear'], ['zoom'], 5, 0.2, 9, 0.85]
+          }
+        });
+
+        map.addLayer({
+          id: 'gem-selected',
+          type: 'line',
+          source: 'gemeinden',
+          filter: ['==', ['get', 'ags'], ''],
+          paint: {
+            'line-color': '#111111',
+            'line-width': ['interpolate', ['linear'], ['zoom'], 5, 1.6, 12, 3.2]
           }
         });
 
@@ -497,33 +551,66 @@
     }
 
     function openGemeindeCard(ags, name, bez) {
-      const data = gemeindeResults[ags];
-      document.getElementById('cardTitle').innerText = name;
+      selectedGemeinde = { ags, name, bez };
+      if (map.getLayer('gem-selected')) {
+        map.setFilter('gem-selected', ['==', ['get', 'ags'], ags]);
+      }
+
+      const electionData = allResults[currentElection] || {};
+      const data = normalizeEntry(electionData[ags]);
+      const electionName = ELECTION_LABELS[currentElection] || 'Wahl';
+
+      document.getElementById('cardTitle').textContent = name;
 
       const container = document.getElementById('barsContainer');
-      container.innerHTML = '';
+      container.textContent = '';
 
       if (!data || data.parties.length === 0) {
-        document.getElementById('cardSubtitle').innerText = `${bez} • Keine eigenen Wahldaten`;
-        container.innerHTML = '<p style="font-size:13px;color:#555;margin:6px 0;">Für dieses Gebiet liegen keine eigenen Urnenwahldaten vor (z. B. gemeindefreies Gebiet).</p>';
+        document.getElementById('cardSubtitle').textContent = `${electionName} • ${bez}`;
+        const msg = document.createElement('p');
+        msg.style.cssText = 'font-size:13px;color:#555;margin:6px 0;';
+        msg.textContent = `Für dieses Gebiet liegen für die ${electionName} keine eigenen Daten vor.`;
+        container.appendChild(msg);
         document.getElementById('resultCard').classList.remove('hidden');
         return;
       }
 
-      document.getElementById('cardSubtitle').innerText = `${bez} • ${data.totalValid.toLocaleString('de-DE')} gültige Zweitstimmen`;
+      const yearText = data.jahr ? ` ${data.jahr}` : '';
+      const subParts = [`${electionName}${yearText}`, bez];
+      if (data.wahlbeteiligung !== null) {
+        subParts.push(`Wahlbet. ${data.wahlbeteiligung.toFixed(1).replace('.', ',')} %`);
+      } else if (data.totalValid !== null) {
+        subParts.push(`${data.totalValid.toLocaleString('de-DE')} gültige Stimmen`);
+      }
+      document.getElementById('cardSubtitle').textContent = subParts.join(' • ');
+
+      const maxScale = Math.max(50, ...data.parties.map(item => item.v));
 
       data.parties.forEach(item => {
-        const color = getPartyColor(item.p);
         const row = document.createElement('div');
         row.className = 'bar-row';
-        row.innerHTML = `
-          <div class="bar-label">
-            <span>${item.p}</span>
-            <span>${item.v.toFixed(1).replace('.', ',')} %</span>
-          </div>
-          <div class="bar-track">
-            <div class="bar-fill" style="width: ${Math.min(item.v * 2.1, 100)}%; background: ${color};"></div>
-          </div>`;
+
+        const label = document.createElement('div');
+        label.className = 'bar-label';
+
+        const partySpan = document.createElement('span');
+        partySpan.textContent = item.p;
+
+        const valueSpan = document.createElement('span');
+        valueSpan.textContent = `${item.v.toFixed(1).replace('.', ',')} %`;
+
+        label.append(partySpan, valueSpan);
+
+        const track = document.createElement('div');
+        track.className = 'bar-track';
+
+        const fill = document.createElement('div');
+        fill.className = 'bar-fill';
+        fill.style.width = `${Math.min((item.v / maxScale) * 100, 100)}%`;
+        fill.style.background = getPartyColor(item.p);
+
+        track.appendChild(fill);
+        row.append(label, track);
         container.appendChild(row);
       });
 
@@ -531,14 +618,92 @@
     }
 
     function closeCard() {
+      selectedGemeinde = null;
+      if (map.getLayer('gem-selected')) {
+        map.setFilter('gem-selected', ['==', ['get', 'ags'], '']);
+      }
       document.getElementById('resultCard').classList.add('hidden');
+    }
+
+    function getFeatureBounds(geometry) {
+      let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+      function scan(coords) {
+        if (typeof coords[0] === 'number') {
+          if (coords[0] < minX) minX = coords[0];
+          if (coords[0] > maxX) maxX = coords[0];
+          if (coords[1] < minY) minY = coords[1];
+          if (coords[1] > maxY) maxY = coords[1];
+        } else {
+          for (let i = 0; i < coords.length; i++) scan(coords[i]);
+        }
+      }
+      if (geometry && geometry.coordinates) scan(geometry.coordinates);
+      return [[minX, minY], [maxX, maxY]];
+    }
+
+    function findLocalGemeinde(query) {
+      if (!currentGeoJSON) return null;
+      const q = query.toLowerCase();
+      let startsMatch = null;
+      for (const f of currentGeoJSON.features) {
+        const name = (f.properties.gem_name || '').toLowerCase();
+        if (name === q) return f;
+        if (!startsMatch && name.startsWith(q)) startsMatch = f;
+      }
+      return startsMatch;
+    }
+
+    async function searchPlace() {
+      const input = document.getElementById('searchInput');
+      const query = input.value.trim();
+      if (!query) return;
+      input.blur();
+
+      const localMatch = findLocalGemeinde(query);
+      if (localMatch) {
+        const props = localMatch.properties;
+        const bounds = getFeatureBounds(localMatch.geometry);
+        map.fitBounds(bounds, {
+          padding: { top: 150, bottom: 260, left: 40, right: 40 },
+          maxZoom: 12,
+          duration: 800
+        });
+        openGemeindeCard(props.ags, props.gem_name, props.gem_bez);
+        return;
+      }
+
+      try {
+        const url = `https://photon.komoot.io/api/?q=${encodeURIComponent(query)}&limit=1&lang=de&bbox=5.8,47.2,15.1,55.1`;
+        const res = await fetch(url);
+        if (!res.ok) throw new Error('Suche fehlgeschlagen');
+        const data = await res.json();
+
+        if (!data.features || data.features.length === 0) {
+          showToast('Kein Ort in Deutschland gefunden.');
+          return;
+        }
+
+        const [lon, lat] = data.features[0].geometry.coordinates;
+        map.flyTo({ center: [lon, lat], zoom: 12 });
+
+        map.once('moveend', () => {
+          const point = map.project([lon, lat]);
+          const features = map.queryRenderedFeatures(point, { layers: ['gem-fill'] });
+          if (features.length > 0) {
+            const props = features[0].properties;
+            openGemeindeCard(props.ags, props.gem_name, props.gem_bez);
+          }
+        });
+      } catch (e) {
+        showToast('Suche aktuell nicht erreichbar.');
+      }
     }
 
     map.on('load', async () => {
       try {
         const [geoRes, jsonRes] = await Promise.all([
           fetch('gemeinden.geojson'),
-          fetch('ergebnisse.json')
+          fetch('ergebnisse.json', { cache: 'no-cache' })
         ]);
         if (!geoRes.ok || !jsonRes.ok) throw new Error('Lokal');
         const geojson = await geoRes.json();
@@ -551,52 +716,31 @@
 
     document.getElementById('fileInput').addEventListener('change', async (e) => {
       const status = document.getElementById('uploadStatus');
-      status.innerText = 'Dateien werden eingelesen...';
+      status.textContent = 'Dateien werden eingelesen...';
 
-      const files = Array.from(e.target.files);
-      for (const file of files) {
-        const text = await file.text();
-        if (file.name.toLowerCase().endsWith('.csv')) {
-          loadedCSVText = text;
-        } else if (file.name.toLowerCase().endsWith('.geojson') || file.name.toLowerCase().endsWith('.json')) {
-          loadedGeoJSON = JSON.parse(text);
+      for (const file of Array.from(e.target.files)) {
+        try {
+          const parsed = JSON.parse(await file.text());
+          if (parsed.type === 'FeatureCollection') {
+            loadedGeoJSON = parsed;
+          } else {
+            loadedResultsJSON = parsed;
+          }
+        } catch (err) {
+          status.textContent = `Datei konnte nicht gelesen werden: ${file.name}`;
+          return;
         }
       }
 
-      if (loadedGeoJSON && loadedCSVText) {
-        const parsed = parseWahlbezirkeCSV(loadedCSVText);
-        downloadCompactJSON(parsed);
-        renderGemeinden(loadedGeoJSON, parsed);
+      if (loadedGeoJSON && loadedResultsJSON) {
+        renderGemeinden(loadedGeoJSON, loadedResultsJSON);
       } else {
-        const missing = !loadedGeoJSON ? 'gemeinden.geojson' : 'Wahlbezirks-CSV (.csv)';
-        status.innerText = `Noch benötigt: ${missing}`;
+        const missing = !loadedGeoJSON ? 'gemeinden.geojson' : 'ergebnisse.json';
+        status.textContent = `Noch benötigt: ${missing}`;
       }
     });
 
-    async function searchPlace() {
-      const input = document.getElementById('searchInput');
-      const query = input.value.trim();
-      if (!query) return;
-      input.blur();
-
-      const res = await fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(query)}&limit=1&lang=de`);
-      const data = await res.json();
-      if (data.features && data.features.length > 0) {
-        const [lon, lat] = data.features[0].geometry.coordinates;
-        map.flyTo({ center: [lon, lat], zoom: 12 });
-
-        map.once('moveend', () => {
-          const point = map.project([lon, lat]);
-          const features = map.queryRenderedFeatures(point, { layers: ['gem-fill'] });
-          if (features.length > 0) {
-            const props = features[0].properties;
-            openGemeindeCard(props.ags, props.gem_name, props.gem_bez);
-          }
-        });
-      }
-    }
-
-    document.getElementById('searchInput').addEventListener('keypress', (e) => {
+    document.getElementById('searchInput').addEventListener('keydown', (e) => {
       if (e.key === 'Enter') searchPlace();
     });
   </script>
