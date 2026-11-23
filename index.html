@@ -275,6 +275,52 @@
       height: 100%;
       border-radius: 4px;
     }
+    .install-banner {
+      position: absolute;
+      bottom: max(16px, env(safe-area-inset-bottom));
+      left: 14px;
+      right: 14px;
+      max-width: 420px;
+      margin: 0 auto;
+      background: #111;
+      color: #fff;
+      padding: 12px 14px;
+      border-radius: 14px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      z-index: 12;
+      font-size: 13px;
+    }
+    .install-banner.hidden {
+      display: none;
+    }
+    .install-banner-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+    .install-action-btn {
+      background: #fff;
+      color: #111;
+      border: none;
+      padding: 7px 12px;
+      border-radius: 8px;
+      font-weight: 700;
+      font-size: 13px;
+      cursor: pointer;
+    }
+    .install-close-btn {
+      background: transparent;
+      color: #aaa;
+      border: none;
+      font-size: 16px;
+      cursor: pointer;
+      padding: 4px;
+    }
   </style>
 </head>
 <body>
@@ -310,7 +356,13 @@
   </div>
 
   <div id="map"></div>
-
+  <div id="installBanner" class="install-banner hidden">
+    <span id="installText">Wahlkarte als App installieren</span>
+    <div class="install-banner-actions">
+      <button type="button" id="installBtn" class="install-action-btn">Installieren</button>
+      <button type="button" id="installClose" class="install-close-btn" aria-label="Schließen">✕</button>
+    </div>
+  </div>	
   <div id="resultCard" class="result-card hidden">
     <div class="card-header">
       <div>
@@ -753,8 +805,44 @@
         navigator.serviceWorker.register('./sw.js');
       });
     }
+    let deferredInstallPrompt = null;
+    const installBanner = document.getElementById('installBanner');
+    const installText = document.getElementById('installText');
+    const installBtn = document.getElementById('installBtn');
+    const installClose = document.getElementById('installClose');
+
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+    const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+
+    if (!isStandalone && !sessionStorage.getItem('installDismissed')) {
+      window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredInstallPrompt = e;
+        installBanner.classList.remove('hidden');
+      });
+
+      if (isIOS) {
+        installText.textContent = 'Als App nutzen: Unten auf Teilen → „Zum Home-Bildschirm“';
+        installBtn.style.display = 'none';
+        installBanner.classList.remove('hidden');
+      }
+    }
+
+    installBtn.addEventListener('click', async () => {
+      if (!deferredInstallPrompt) return;
+      deferredInstallPrompt.prompt();
+      await deferredInstallPrompt.userChoice;
+      deferredInstallPrompt = null;
+      installBanner.classList.add('hidden');
+    });
+
+    installClose.addEventListener('click', () => {
+      installBanner.classList.add('hidden');
+      sessionStorage.setItem('installDismissed', '1');
+    });
   </script>
 
 </body>
 </html>
+
 
