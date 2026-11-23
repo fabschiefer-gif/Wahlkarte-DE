@@ -1,0 +1,41 @@
+name: Wahlkarte automatisch aktualisieren
+
+on:
+  schedule:
+    # Laeuft jeden Sonntag um 04:00 Uhr UTC
+    - cron: '0 4 * * 0'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  update-data:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Repository auschecken
+        uses: actions/checkout@v4
+
+      - name: Python einrichten
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Abhaengigkeiten installieren
+        run: pip install gerda pandas
+
+      - name: Wahldaten abrufen und verarbeiten
+        run: python update_data.py
+
+      - name: Aenderungen pruefen und hochladen
+        run: |
+          git config --local user.name "github-actions[bot]"
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          if [ -n "$(git status --porcelain ergebnisse.json)" ]; then
+            git add ergebnisse.json
+            git commit -m "Automatisches Daten-Update ($(date +'%Y-%m-%d'))"
+            git push
+          else
+            echo "Keine Aenderungen an den Wahldaten vorhanden."
+          fi
