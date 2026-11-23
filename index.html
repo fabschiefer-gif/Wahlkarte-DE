@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Wahlkarte Deutschland – Alle Gemeinden</title>
+  
+  <script src="https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+  <link href="https://cdn.jsdelivr.net/npm/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet" />
+
+  <style>
+    body, html {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      overflow: hidden;
+      background: #f0f2f5;
+    }
+    #map {
+      width: 100%;
+      height: 100%;
+    }
+    .search-bar {
+      position: absolute;
+      top: 14px;
+      left: 14px;
+      right: 14px;
+      max-width: 420px;
+      margin: 0 auto;
+      display: flex;
+      gap: 6px;
+      padding: 6px;
+      background: rgba(255, 255, 255, 0.78);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.6);
+      border-radius: 14px;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
+      z-index: 10;
+    }
+    .search-bar:focus-within {
+      background: rgba(255, 255, 255, 0.96);
+    }
+    .search-bar input {
+      flex: 1;
+      border: none;
+      background: transparent;
+      padding: 8px 10px;
+      font-size: 15px;
+      outline: none;
+      color: #111;
+    }
+    .search-bar button {
+      padding: 8px 14px;
+      background: #111;
+      color: white;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 14px;
+    }
+
+    .upload-box {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: calc(100% - 40px);
+      max-width: 390px;
+      background: white;
+      padding: 20px;
+      border-radius: 16px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.22);
+      z-index: 20;
+      text-align: center;
+    }
+    .upload-box.hidden {
+      display: none;
+    }
+    .upload-box h2 {
+      margin: 0 0 8px 0;
+      font-size: 17px;
+    }
+    .upload-box p {
+      margin: 0 0 14px 0;
+      font-size: 13px;
+      color: #555;
+      line-height: 1.45;
+    }
+    .upload-btn {
+      display: inline-block;
+      background: #111;
+      color: white;
+      padding: 10px 16px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    #fileInput {
+      display: none;
+    }
+    #uploadStatus {
+      margin-top: 10px;
+      font-size: 12px;
+      color: #444;
+      font-weight: 500;
+    }
+
+    .mini-legend {
+      position: absolute;
+      top: 68px;
+      left: 14px;
+      background: rgba(255, 255, 255, 0.84);
+      backdrop-filter: blur(8px);
+      padding: 5px 10px;
+      border-radius: 10px;
+      font-size: 11px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      z-index: 9;
+    }
+    .dot {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      margin-right: 4px;
+    }
+
+    .result-card {
+      position: absolute;
+      bottom: 20px;
+      left: 14px;
+      right: 14px;
+      max-width: 420px;
+      max-height: 48vh;
+      overflow-y: auto;
+      margin: 0 auto;
+      background: rgba(255, 255, 255, 0.94);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      padding: 14px 16px;
+      border-radius: 16px;
+      box-shadow: 0 6px 24px rgba(0, 0, 0, 0.18);
+      z-index: 10;
+      transition: transform 0.25s ease, opacity 0.25s ease;
+    }
+    .result-card.hidden {
+      transform: translateY(120%);
+      opacity: 0;
+      pointer-events: none;
+    }
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    .card-title {
+      font-size: 16px;
+      font-weight: 700;
+      margin: 0;
+    }
+    .card-subtitle {
+      font-size: 12px;
+      color: #666;
+      margin: 2px 0 0 0;
+    }
+    .close-btn {
+      background: rgba(0,0,0,0.08);
+      border: none;
+      width: 26px;
+      height: 26px;
+      border-radius: 50%;
+      cursor: pointer;
+      font-size: 14px;
+      color: #333;
+    }
+    .bar-row {
+      margin-bottom: 7px;
+    }
+    .bar-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 3px;
+    }
+    .bar-track {
+      width: 100%;
+      height: 8px;
+      background: #e5e7eb;
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .bar-fill {
+      height: 100%;
+      border-radius: 4px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="search-bar">
+    <input type="text" id="searchInput" placeholder="Gemeinde oder Stadt suchen (z. B. Niederwörresbach)..." />
+    <button onclick="searchPlace()">Suchen</button>
+  </div>
+
+  <div class="mini-legend">
+    <span><i class="dot" style="background:#111111;"></i>CDU/CSU</span>
+    <span><i class="dot" style="background:#009ee0;"></i>AfD</span>
+    <span><i class="dot" style="background:#e3000f;"></i>SPD</span>
+    <span><i class="dot" style="background:#46962b;"></i>Grüne</span>
+    <span><i class="dot" style="background:#be3075;"></i>Linke</span>
+  </div>
+
+  <div id="uploadBox" class="upload-box hidden">
+    <h2>Gemeinde-Daten laden</h2>
+    <p>Wähle <strong>gemeinden.geojson</strong> und die große <strong>Wahlbezirks-CSV</strong> aus. Dabei wird automatisch die kleine <strong>ergebnisse.json</strong> für GitHub heruntergeladen.</p>
+    <label for="fileInput" class="upload-btn">Beide Dateien auswählen</label>
+    <input type="file" id="fileInput" multiple accept=".geojson,.json,.csv" />
+    <div id="uploadStatus"></div>
+  </div>
+
+  <div id="map"></div>
+
+  <div id="resultCard" class="result-card hidden">
+    <div class="card-header">
+      <div>
+        <h2 id="cardTitle" class="card-title">Gemeinde</h2>
+        <p id="cardSubtitle" class="card-subtitle">Bundestagswahl 2025 (Zweitstimmen)</p>
+      </div>
+      <button class="close-btn" onclick="closeCard()">✕</button>
+    </div>
+    <div id="barsContainer"></div>
+  </div>
+
+  <script>
+    const partyColors = {
+      "CDU": "#111111",
+      "CSU": "#111111",
+      "AfD": "#009ee0",
+      "SPD": "#e3000f",
+      "GRÜNE": "#46962b",
+      "Grüne": "#46962b",
+      "Die Linke": "#be3075",
+      "DIE LINKE": "#be3075",
+      "Linke": "#be3075",
+      "BSW": "#792351",
+      "FDP": "#e6b800",
+      "FREIE WÄHLER": "#f39200",
+      "SSW": "#003c8f",
+      "Volt": "#502379",
+      "Sonstige": "#888888"
+    };
+
+    function getPartyColor(name) {
+      if (partyColors[name]) return partyColors[name];
+      const upper = name.toUpperCase();
+      if (upper.includes("CDU") || upper.includes("CSU")) return "#111111";
+      if (upper.includes("AFD")) return "#009ee0";
+      if (upper.includes("SPD")) return "#e3000f";
+      if (upper.includes("GRÜN")) return "#46962b";
+      if (upper.includes("LINKE")) return "#be3075";
+      if (upper.includes("BSW")) return "#792351";
+      if (upper.includes("FDP")) return "#e6b800";
+      if (upper.includes("FREIE WÄHLER")) return "#f39200";
+      return "#888888";
+    }
+
+    let gemeindeResults = {};
+    let loadedGeoJSON = null;
+    let loadedCSVText = null;
+
+    const map = new maplibregl.Map({
+      container: 'map',
+      style: {
+        version: 8,
+        sources: {
+          'osm-de': {
+            type: 'raster',
+            tiles: ['https://tile.openstreetmap.de/{z}/{x}/{y}.png'],
+            tileSize: 256,
+            attribution: '&copy; OpenStreetMap-Mitwirkende'
+          }
+        },
+        layers: [{ id: 'osm-de-layer', type: 'raster', source: 'osm-de' }]
+      },
+      center: [10.4515, 51.1657],
+      zoom: 5.5
+    });
+
+    map.addControl(new maplibregl.NavigationControl(), 'top-right');
+    map.addControl(new maplibregl.GeolocateControl({
+      positionOptions: { enableHighAccuracy: true },
+      trackUserLocation: true
+    }), 'top-right');
+
+    function parseWahlbezirkeCSV(csvText) {
+      const lines = csvText.split(/\r?\n/);
+      let headerIndex = -1;
+
+      for (let i = 0; i < Math.min(lines.length, 30); i++) {
+        const line = lines[i];
+        if (!line.startsWith('#') && line.includes('Land') && line.includes('Kreis') && line.includes('Gemeinde')) {
+          headerIndex = i;
+          break;
+        }
+      }
+      if (headerIndex === -1) return {};
+
+      const headers = lines[headerIndex].split(';').map(h => h.trim().replace(/^"|"$/g, ''));
+      const idxLand  = headers.indexOf('Land');
+      const idxRB    = headers.findIndex(h => h === 'Regierungsbezirk' || h === 'RB');
+      const idxKreis = headers.indexOf('Kreis');
+      const idxGem   = headers.indexOf('Gemeinde');
+
+      const gueltigeIndices = headers
+        .map((h, idx) => h.toLowerCase().startsWith('gültige') ? idx : -1)
+        .filter(idx => idx !== -1);
+
+      const idxGueltigeZweit = gueltigeIndices.length >= 2
+        ? gueltigeIndices[1]
+        : headers.findIndex(h => h.toLowerCase().includes('gültige') && h.toLowerCase().includes('zweit'));
+
+      if (idxLand === -1 || idxKreis === -1 || idxGem === -1 || idxGueltigeZweit === -1) {
+        return {};
+      }
+
+      const ignoreKeywords = [
+        'wahlbezirksbezeichnung', 'bemerkung', 'fußnote', 'hinweis', 'kommentar',
+        'bezirksart', 'wahlbezirk', 'gemeinde', 'kreis', 'land', 'wahlkreis',
+        'ungültige', 'gültige', 'wahlberechtigte', 'wählende'
+      ];
+
+      const partyCols = [];
+      for (let c = idxGueltigeZweit + 1; c < headers.length; c++) {
+        const cleanParty = headers[c]
+          .replace(/\s*-\s*Zweitstimmen/i, '')
+          .replace(/\.1$/, '')
+          .trim();
+        if (!cleanParty) continue;
+        const lower = cleanParty.toLowerCase();
+        if (ignoreKeywords.some(kw => lower.includes(kw))) continue;
+
+        partyCols.push({ index: c, name: cleanParty });
+      }
+
+      const aggByAGS = {};
+
+      for (let i = headerIndex + 1; i < lines.length; i++) {
+        const line = lines[i];
+        if (!line || line.startsWith('#')) continue;
+
+        const cols = line.split(';');
+        if (cols.length <= idxGueltigeZweit) continue;
+
+        const land  = cols[idxLand].trim().replace(/^"|"$/g, '').padStart(2, '0');
+        const rb    = idxRB !== -1 ? cols[idxRB].trim().replace(/^"|"$/g, '').padStart(1, '0') : '0';
+        const kreis = cols[idxKreis].trim().replace(/^"|"$/g, '').padStart(2, '0');
+        const gem   = cols[idxGem].trim().replace(/^"|"$/g, '').padStart(3, '0');
+
+        const ags = land + rb + kreis + gem;
+        const validVotes = parseInt(cols[idxGueltigeZweit].trim(), 10) || 0;
+        if (validVotes <= 0) continue;
+
+        if (!aggByAGS[ags]) {
+          aggByAGS[ags] = { totalValid: 0, votes: {} };
+        }
+        aggByAGS[ags].totalValid += validVotes;
+
+        for (let p = 0; p < partyCols.length; p++) {
+          const pc = partyCols[p];
+          const rawVal = (cols[pc.index] || '').trim().replace(/^"|"$/g, '');
+          if (/^\d+$/.test(rawVal)) {
+            const v = parseInt(rawVal, 10);
+            if (v > 0) {
+              aggByAGS[ags].votes[pc.name] = (aggByAGS[ags].votes[pc.name] || 0) + v;
+            }
+          }
+        }
+      }
+
+      const finalResults = {};
+      Object.keys(aggByAGS).forEach(ags => {
+        const entry = aggByAGS[ags];
+        if (entry.totalValid <= 0) return;
+
+        const list = Object.keys(entry.votes)
+          .map(party => ({
+            p: party,
+            v: Math.round(((entry.votes[party] / entry.totalValid) * 100) * 100) / 100
+          }))
+          .sort((a, b) => b.v - a.v);
+
+        const major = [];
+        let sonstigeSum = 0;
+        list.forEach((item, idx) => {
+          if (idx < 7 && item.v >= 1.5) {
+            major.push(item);
+          } else {
+            sonstigeSum += item.v;
+          }
+        });
+        if (sonstigeSum > 0.1) {
+          major.push({ p: "Sonstige", v: Math.round(sonstigeSum * 100) / 100 });
+        }
+
+        finalResults[ags] = {
+          totalValid: entry.totalValid,
+          parties: major
+        };
+      });
+
+      return finalResults;
+    }
+
+    function downloadCompactJSON(dataObj) {
+      const blob = new Blob([JSON.stringify(dataObj)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'ergebnisse.json';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    function renderGemeinden(geojson, resultsMap) {
+      gemeindeResults = resultsMap;
+
+      geojson.features = geojson.features.filter(f => {
+        const gf = f.properties && f.properties.GF;
+        return gf === undefined || gf === null || Number(gf) === 4;
+      });
+
+      geojson.features.forEach(feature => {
+        const props = feature.properties || {};
+        const ags = String(props.AGS || props.ags || '').trim().padStart(8, '0');
+        const name = props.GEN || props.gen || props.NAME || 'Unbekannt';
+        const bez = props.BEZ || props.bez || 'Gemeinde';
+
+        feature.properties.ags = ags;
+        feature.properties.gem_name = name;
+        feature.properties.gem_bez = bez;
+
+        const res = gemeindeResults[ags];
+        if (res && res.parties.length > 0) {
+          feature.properties.color = getPartyColor(res.parties[0].p);
+        } else {
+          feature.properties.color = "#999999";
+        }
+      });
+
+      if (map.getSource('gemeinden')) {
+        map.getSource('gemeinden').setData(geojson);
+      } else {
+        map.addSource('gemeinden', { type: 'geojson', data: geojson });
+
+        map.addLayer({
+          id: 'gem-fill',
+          type: 'fill',
+          source: 'gemeinden',
+          paint: {
+            'fill-color': ['get', 'color'],
+            'fill-opacity': ['interpolate', ['linear'], ['zoom'], 5, 0.6, 12, 0.28]
+          }
+        });
+
+        map.addLayer({
+          id: 'gem-border',
+          type: 'line',
+          source: 'gemeinden',
+          paint: {
+            'line-color': '#ffffff',
+            'line-width': ['interpolate', ['linear'], ['zoom'], 6, 0.15, 10, 0.9, 13, 1.8],
+            'line-opacity': ['interpolate', ['linear'], ['zoom'], 5, 0.2, 9, 0.85]
+          }
+        });
+
+        map.on('click', 'gem-fill', (e) => {
+          const props = e.features[0].properties;
+          openGemeindeCard(props.ags, props.gem_name, props.gem_bez);
+        });
+
+        map.on('mouseenter', 'gem-fill', () => map.getCanvas().style.cursor = 'pointer');
+        map.on('mouseleave', 'gem-fill', () => map.getCanvas().style.cursor = '');
+      }
+
+      document.getElementById('uploadBox').classList.add('hidden');
+    }
+
+    function openGemeindeCard(ags, name, bez) {
+      const data = gemeindeResults[ags];
+      document.getElementById('cardTitle').innerText = name;
+
+      const container = document.getElementById('barsContainer');
+      container.innerHTML = '';
+
+      if (!data || data.parties.length === 0) {
+        document.getElementById('cardSubtitle').innerText = `${bez} • Keine eigenen Wahldaten`;
+        container.innerHTML = '<p style="font-size:13px;color:#555;margin:6px 0;">Für dieses Gebiet liegen keine eigenen Urnenwahldaten vor (z. B. gemeindefreies Gebiet).</p>';
+        document.getElementById('resultCard').classList.remove('hidden');
+        return;
+      }
+
+      document.getElementById('cardSubtitle').innerText = `${bez} • ${data.totalValid.toLocaleString('de-DE')} gültige Zweitstimmen`;
+
+      data.parties.forEach(item => {
+        const color = getPartyColor(item.p);
+        const row = document.createElement('div');
+        row.className = 'bar-row';
+        row.innerHTML = `
+          <div class="bar-label">
+            <span>${item.p}</span>
+            <span>${item.v.toFixed(1).replace('.', ',')} %</span>
+          </div>
+          <div class="bar-track">
+            <div class="bar-fill" style="width: ${Math.min(item.v * 2.1, 100)}%; background: ${color};"></div>
+          </div>`;
+        container.appendChild(row);
+      });
+
+      document.getElementById('resultCard').classList.remove('hidden');
+    }
+
+    function closeCard() {
+      document.getElementById('resultCard').classList.add('hidden');
+    }
+
+    map.on('load', async () => {
+      try {
+        const [geoRes, jsonRes] = await Promise.all([
+          fetch('gemeinden.geojson'),
+          fetch('ergebnisse.json')
+        ]);
+        if (!geoRes.ok || !jsonRes.ok) throw new Error('Lokal');
+        const geojson = await geoRes.json();
+        const results = await jsonRes.json();
+        renderGemeinden(geojson, results);
+      } catch (e) {
+        document.getElementById('uploadBox').classList.remove('hidden');
+      }
+    });
+
+    document.getElementById('fileInput').addEventListener('change', async (e) => {
+      const status = document.getElementById('uploadStatus');
+      status.innerText = 'Dateien werden eingelesen...';
+
+      const files = Array.from(e.target.files);
+      for (const file of files) {
+        const text = await file.text();
+        if (file.name.toLowerCase().endsWith('.csv')) {
+          loadedCSVText = text;
+        } else if (file.name.toLowerCase().endsWith('.geojson') || file.name.toLowerCase().endsWith('.json')) {
+          loadedGeoJSON = JSON.parse(text);
+        }
+      }
+
+      if (loadedGeoJSON && loadedCSVText) {
+        const parsed = parseWahlbezirkeCSV(loadedCSVText);
+        downloadCompactJSON(parsed);
+        renderGemeinden(loadedGeoJSON, parsed);
+      } else {
+        const missing = !loadedGeoJSON ? 'gemeinden.geojson' : 'Wahlbezirks-CSV (.csv)';
+        status.innerText = `Noch benötigt: ${missing}`;
+      }
+    });
+
+    async function searchPlace() {
+      const input = document.getElementById('searchInput');
+      const query = input.value.trim();
+      if (!query) return;
+      input.blur();
+
+      const res = await fetch(`https://photon.komoot.io/api/?q=${encodeURIComponent(query)}&limit=1&lang=de`);
+      const data = await res.json();
+      if (data.features && data.features.length > 0) {
+        const [lon, lat] = data.features[0].geometry.coordinates;
+        map.flyTo({ center: [lon, lat], zoom: 12 });
+
+        map.once('moveend', () => {
+          const point = map.project([lon, lat]);
+          const features = map.queryRenderedFeatures(point, { layers: ['gem-fill'] });
+          if (features.length > 0) {
+            const props = features[0].properties;
+            openGemeindeCard(props.ags, props.gem_name, props.gem_bez);
+          }
+        });
+      }
+    }
+
+    document.getElementById('searchInput').addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') searchPlace();
+    });
+  </script>
+
+</body>
+</html>
